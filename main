@@ -1,0 +1,292 @@
+package connectfour
+
+import java.lang.IndexOutOfBoundsException
+import kotlin.system.exitProcess
+
+fun main() {
+    setNamesPlayers()
+
+
+
+    numberOfGames()
+    createFieldGameBoard()
+    startGame()
+}
+
+var nameFirstPlayer: String = "none"
+var nameSecondPlayer: String = "none"
+
+var playerStartGame = ""
+var currentTurn = ""
+
+fun setNamesPlayers(){
+    println("Connect Four")
+
+    println("First player's name:")
+    nameFirstPlayer = readln()
+
+    println("Second player's name:")
+    nameSecondPlayer = readln()
+
+    playerStartGame = nameFirstPlayer
+    currentTurn = nameFirstPlayer
+    setBoardDimension()
+}
+
+var decimalGames = 1
+var currentGame = 1
+var inputNumberGames = 0
+fun numberOfGames() {
+    while (true) {
+        try {
+            println("Do you want to play single or multiple games?\nFor a single game, input 1 or press Enter\n" +
+                    "Input a number of games:")
+
+            val numberOfGames = readln()
+
+            if (numberOfGames == "1" || numberOfGames.isEmpty()) {
+                inputNumberGames++
+                println("$nameFirstPlayer VS $nameSecondPlayer\n$rows X $columns board")
+                return
+            } else if (numberOfGames.toInt() > 0) {
+                inputNumberGames = numberOfGames.toInt()
+                println("$nameFirstPlayer VS $nameSecondPlayer\n$rows X $columns board")
+                println("Total ${numberOfGames.toInt()} games")
+                decimalGames = numberOfGames.toInt()
+                return
+            } else {
+                println("Invalid input")
+            }
+        } catch (e: java.lang.NumberFormatException) {
+            println("Invalid input")
+        }
+    }
+}
+
+var rows: Int = 0
+var columns: Int = 0
+fun setBoardDimension() {
+    println("Set the board dimensions (Rows x Columns)\nPress Enter for default (6 x 7)")
+    val boardDimension = readln().lowercase()
+
+    try {
+        if (boardDimension.isEmpty()) {
+            rows = 6
+            columns = 7
+        } else {
+            rows = boardDimension.substringBefore('x'.lowercase()).trim().toInt()
+            columns = boardDimension.substringAfter('x'.lowercase()).trim().toInt()
+        }
+
+    } catch (e: NumberFormatException) {
+        println("Invalid input")
+        setBoardDimension()
+    }
+
+    checkSetsAndRows()
+
+}
+
+
+fun checkSetsAndRows() {
+    if ((rows < 5) || (rows > 9)) {
+        println("Board rows should be from 5 to 9")
+        setBoardDimension()
+    }
+
+    if ((columns < 5) || (columns > 9)) {
+        println("Board columns should be from 5 to 9")
+        setBoardDimension()
+    }
+}
+
+val gameBoard = mutableListOf<MutableList<String>>()
+
+fun createFieldGameBoard() {
+    for (i in 1..columns) {
+        gameBoard.add(MutableList(rows) {" "})
+    }
+}
+
+fun paintGameBoard() {
+    // горизонтальный отсчёт
+    for (i in 1..columns) print(" $i")
+    println()
+
+    // печать мест
+    for (i in 0 until rows) {
+        for (j in 0 until columns) print("║${gameBoard[j][i]}")
+        println("║")
+    }
+
+    // печать нижней строки символов
+    print("╚")
+    for (i in 1 until columns) {
+        print("═╩")
+    }
+    println("═╝")
+}
+
+
+fun startGame() {
+    if (inputNumberGames > 1) println("Game #$currentGame") else println("Single game")
+
+    paintGameBoard()
+
+    var countTurns = 0
+    while (true) {
+        println("$currentTurn's turn:")
+
+        val playerTurn = readln()
+
+
+        try {
+            val turn = playerTurn.toInt() - 1
+
+
+            inRows@ for (i in rows - 1 downTo 0) {
+                if (gameBoard[turn][i] == " ") {
+                    if (currentTurn == nameFirstPlayer) {
+                        gameBoard[turn][i] = ("o")
+                        paintGameBoard()
+                        currentTurn = nameSecondPlayer
+                        countTurns++
+                        checkResult(turn, countTurns)
+                        break@inRows
+                    } else {
+                        gameBoard[turn][i] = "*"
+                        paintGameBoard()
+                        currentTurn = nameFirstPlayer
+                        countTurns++
+                        checkResult(turn, countTurns)
+                        break@inRows
+                    }
+                } else if (playerTurn == "end") {
+                    println("Game over")
+                    exitProcess(0)
+                } else if (gameBoard[turn][0] != " "){
+                    println("Column $playerTurn is full")
+                    break@inRows
+                } else continue
+
+            }
+        } catch (e: IndexOutOfBoundsException) {
+            println("The column number is out of range (1 - $columns)")
+        } catch (e: java.lang.NumberFormatException) {
+            if (playerTurn == "end") {
+                println("Game over!")
+                exitProcess(0)
+            } else
+                println("Incorrect column number")
+        }
+
+
+    }
+}
+
+
+fun endGame() {
+    gameBoard.clear()
+    createFieldGameBoard()
+
+    currentGame++
+
+    playerStartGame = if (playerStartGame == nameFirstPlayer) nameSecondPlayer else nameFirstPlayer
+    currentTurn = playerStartGame
+
+    if (inputNumberGames > 1) println("Score\n$nameFirstPlayer: $pointsFirstPlayer $nameSecondPlayer: $pointsSecondPlayer")
+
+    decimalGames--
+    if (decimalGames != 0) startGame()
+    else {
+        println("Game over!")
+        exitProcess(0)
+    }
+}
+
+var pointsFirstPlayer = 0
+var pointsSecondPlayer = 0
+fun checkResult(turn: Int, countTurns: Int) {
+    // DRAW
+    if (rows * columns == countTurns) {
+        println("It is a draw")
+        pointsFirstPlayer += 1
+        pointsSecondPlayer += 1
+        endGame()
+
+    }
+
+    // VERTICAL WIN
+    for (i in 3 until rows) {
+        if (gameBoard[turn][i] == "o" && gameBoard[turn][i - 1] == "o" && gameBoard[turn][i - 2] == "o"
+            && gameBoard[turn][i - 3] == "o"
+        ) {
+            println("Player $nameFirstPlayer won")
+
+            pointsFirstPlayer += 2
+            endGame()
+        } else if (gameBoard[turn][i] == "*" && gameBoard[turn][i - 1] == "*" && gameBoard[turn][i - 2] == "*"
+            && gameBoard[turn][i - 3] == "*"
+        ) {
+            println("Player $nameSecondPlayer won")
+            pointsSecondPlayer += 2
+            endGame()
+        }
+    }
+
+    // HORIZONTAL WIN
+    for (row in 0 until rows) {
+        for (column in 3 until columns) {
+            if (gameBoard[column][row] == "o" && gameBoard[column - 1][row] == "o" && gameBoard[column - 2][row] == "o"
+                && gameBoard[column - 3][row] == "o"
+            ) {
+                println("Player $nameFirstPlayer won")
+                pointsFirstPlayer += 2
+                endGame()
+            } else if (gameBoard[column][row] == "*" && gameBoard[column - 1][row] == "*" && gameBoard[column - 2][row] == "*"
+                && gameBoard[column - 3][row] == "*"
+            ) {
+                println("Player $nameSecondPlayer won")
+                pointsSecondPlayer += 2
+                endGame()
+            }
+        }
+    }
+
+    // DG WIN
+    for (column in 0..columns - 4) {
+        for (row in 0..rows - 4) {
+            if (gameBoard[column][row] == "o" && gameBoard[column + 1][row + 1] == "o" &&
+                gameBoard[column + 2][row + 2] == "o" && gameBoard[column + 3][row + 3] == "o"
+            ) {
+                println("Player $nameFirstPlayer won")
+                pointsFirstPlayer += 2
+                endGame()
+            } else if (gameBoard[column][row] == "*" && gameBoard[column + 1][row + 1] == "*" &&
+                gameBoard[column + 2][row + 2] == "*" && gameBoard[column + 3][row + 3] == "*"
+            ) {
+                println("Player $nameSecondPlayer won")
+                pointsSecondPlayer += 2
+                endGame()
+            }
+        }
+    }
+
+    for (column in 0..columns - 4) {
+        for (row in rows - 1 downTo 3) {
+            if (gameBoard[column][row] == "o" && gameBoard[column + 1][row - 1] == "o" &&
+                gameBoard[column + 2][row - 2] == "o" && gameBoard[column + 3][row - 3] == "o"
+            ) {
+                println("Player $nameFirstPlayer won")
+                pointsFirstPlayer += 2
+                exitProcess(0)
+            } else if (gameBoard[column][row] == "*" && gameBoard[column + 1][row - 1] == "*" &&
+                gameBoard[column + 2][row - 2] == "*" && gameBoard[column + 3][row - 3] == "*"
+            ) {
+                println("Player $nameSecondPlayer won")
+                pointsSecondPlayer += 2
+                exitProcess(0)
+            }
+        }
+    }
+}
